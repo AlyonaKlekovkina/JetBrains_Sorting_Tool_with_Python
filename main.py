@@ -3,10 +3,13 @@ import sys
 
 def parse_arguments():
     args = sys.argv
-    if len(args) != 3:
-        d_type = 'word'
+    if '-sortIntegers' in args:
+        d_type = '-sortIntegers'
     else:
-        d_type = args[2]
+        if len(args) != 3:
+            d_type = 'word'
+        else:
+            d_type = args[2]
     return d_type
 
 
@@ -67,31 +70,54 @@ def process_lines(lines_input):
     return max(lines_dictionary, key=lines_dictionary.get)
 
 
+def sort_integers(list_of_integers):
+    i = 1
+    while i < len(list_of_integers):
+        x = list_of_integers[i]
+        j = i - 1
+        while j >= 0 and list_of_integers[j] > x:
+            list_of_integers[j + 1] = list_of_integers[j]
+            j = j - 1
+        list_of_integers[j + 1] = x
+        i = i + 1
+    string = ''
+    for s in list_of_integers:
+        string += str(s)
+        string += ' '
+    return string
+
+
 argument_data_type = parse_arguments()
 nested_list_of_data = take_input()
-if argument_data_type == 'long':
+if argument_data_type == '-sortIntegers':
     data = determine_input_data_type(nested_list_of_data)
     x = len(data)
-    y = sorted(data)[-1]
-    calculations = calculate_count_percentage(x, y, data)
-    z = calculations[0]
-    percentage = calculations[1]
-    print("Total numbers: {}. \nThe greatest number: {} ({} time(s)), {}%.".format(x, y, z, percentage))
-if argument_data_type == 'line':
-    x = len(nested_list_of_data)
-    y = process_lines(nested_list_of_data)
-    calculations = calculate_count_percentage(x, y, nested_list_of_data)
-    z = calculations[0]
-    percentage = calculations[1]
-    print("Total lines: {}.\nThe longest line:\n{}\n({} time(s), {}%).".format(x, y, z, percentage))
-if argument_data_type == 'word':
-    data = determine_input_data_type(nested_list_of_data)
-    if type(data[0]) is int:
+    y = sort_integers(data)
+    print("Total numbers: {}.\nSorted data: {}".format(x, y))
+else:
+    if argument_data_type == 'long':
+        data = determine_input_data_type(nested_list_of_data)
+        x = len(data)
         y = sorted(data)[-1]
-    else:
-        y = process_words(data)
-    x = len(data)
-    calculations = calculate_count_percentage(x, y, data)
-    z = calculations[0]
-    percentage = calculations[1]
-    print("Total words: {}.\nThe longest word: {} ({} time(s), {}%).".format(x, y, z, percentage))
+        calculations = calculate_count_percentage(x, y, data)
+        z = calculations[0]
+        percentage = calculations[1]
+        print("Total numbers: {}. \nThe greatest number: {} ({} time(s)), {}%.".format(x, y, z, percentage))
+    if argument_data_type == 'line':
+        x = len(nested_list_of_data)
+        y = process_lines(nested_list_of_data)
+        calculations = calculate_count_percentage(x, y, nested_list_of_data)
+        z = calculations[0]
+        percentage = calculations[1]
+        print("Total lines: {}.\nThe longest line:\n{}\n({} time(s), {}%).".format(x, y, z, percentage))
+    if argument_data_type == 'word':
+        data = determine_input_data_type(nested_list_of_data)
+        if type(data[0]) is int:
+            y = sorted(data)[-1]
+        else:
+            y = process_words(data)
+        x = len(data)
+        calculations = calculate_count_percentage(x, y, data)
+        z = calculations[0]
+        percentage = calculations[1]
+        print("Total words: {}.\nThe longest word: {} ({} time(s), {}%).".format(x, y, z, percentage))
