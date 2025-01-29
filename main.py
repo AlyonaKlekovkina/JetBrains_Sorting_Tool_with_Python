@@ -1,16 +1,25 @@
+
 import sys
 
 
 def parse_arguments():
     args = sys.argv
-    if '-sortIntegers' in args:
-        d_type = '-sortIntegers'
-    else:
-        if len(args) != 3:
-            d_type = 'word'
-        else:
-            d_type = args[2]
-    return d_type
+    sorting_types = ['natural', 'byCount']
+    data_types = ['long', 'line', 'word']
+    sorting_type = ''
+    data_type = ''
+    if '-sortingType' in args:
+        for i in sorting_types:
+            if i in args:
+                sorting_type = i
+    elif '-sortingType' not in args:
+        sorting_type = 'natural'
+    for i in data_types:
+        if i in args:
+            data_type = i
+    if len(data_type) == 0:
+        data_type = 'word'
+    return sorting_type, data_type
 
 
 def take_input():
@@ -41,45 +50,38 @@ def determine_input_data_type(raw_data):
         return words_list
 
 
-def calculate_count_percentage(x, y, list_of_raw_data):
-    count = 0
-    for i in list_of_raw_data:
-        if i == y:
-            count += 1
-    z = count
-    percentage = int((count / x) * 100)
-    return z, percentage
-
-
-def process_words(list_of_raw_data):
-    longest = list_of_raw_data[0]
-    for i in list_of_raw_data:
-        if len(i) > len(longest):
-            longest = i
-        if len(i) == len(longest) and i > longest:
-            longest = i
-        if len(i) == len(longest) and i < longest:
-            longest = longest
-    return longest
-
-
-def process_lines(lines_input):
+def process_lines_by_count(lines_input):
+    total = len(lines_input)
     lines_dictionary = {}
     for i in lines_input:
-        lines_dictionary.update({i: len(i)})
-    return max(lines_dictionary, key=lines_dictionary.get)
+        if i not in lines_dictionary:
+            lines_dictionary.update({i: 1})
+        elif i in lines_dictionary:
+            lines_dictionary[i] += 1
+    print("Total lines: {}.".format(total))
+    for key, value in sorted(lines_dictionary.items()):
+        percent = (value / total) * 100
+        print("{}: {} time(s), {}%".format(key, value, int(percent)))
+
+
+def process_lines_naturally(lines_input):
+    sorted_lines = sorted(lines_input)
+    print("Total lines: {}.".format(len(sorted_lines)))
+    print("Sorted data:")
+    for i in sorted_lines:
+        print(i)
 
 
 def sort_integers(list_of_integers):
-    i = 1
-    while i < len(list_of_integers):
-        x = list_of_integers[i]
-        j = i - 1
+    element = 1
+    while element < len(list_of_integers):
+        x = list_of_integers[element]
+        j = element - 1
         while j >= 0 and list_of_integers[j] > x:
             list_of_integers[j + 1] = list_of_integers[j]
             j = j - 1
         list_of_integers[j + 1] = x
-        i = i + 1
+        element = element + 1
     string = ''
     for s in list_of_integers:
         string += str(s)
@@ -87,37 +89,54 @@ def sort_integers(list_of_integers):
     return string
 
 
+def sort_words(list_of_words):
+    element = 1
+    while element < len(list_of_words):
+        first_index = list_of_words[element]
+        second_index = element - 1
+        while second_index >= 0 and str(list_of_words[second_index]) > str(first_index):
+            list_of_words[second_index + 1] = list_of_words[second_index]
+            second_index = second_index - 1
+        list_of_words[second_index + 1] = first_index
+        element = element + 1
+    string = ''
+    for s in list_of_words:
+        string += str(s)
+        string += ' '
+    return string
+
+
+def sort_by_count(list_to_sort, total):
+    data_counted = {}
+    count = 1
+    for i in list_to_sort.split(' '):
+        if i not in data_counted and i != '':
+            data_counted.update({i: 1})
+        elif i in data_counted:
+            count += 1
+            data_counted.update({i: count})
+    for key, value in sorted(data_counted.items(), key=lambda x: x[1]):
+        percent = (value / total) * 100
+        print("{}: {} time(s), {}%".format(key, value, int(percent)))
+
+
 argument_data_type = parse_arguments()
 nested_list_of_data = take_input()
-if argument_data_type == '-sortIntegers':
-    data = determine_input_data_type(nested_list_of_data)
-    x = len(data)
-    y = sort_integers(data)
-    print("Total numbers: {}.\nSorted data: {}".format(x, y))
-else:
-    if argument_data_type == 'long':
-        data = determine_input_data_type(nested_list_of_data)
-        x = len(data)
-        y = sorted(data)[-1]
-        calculations = calculate_count_percentage(x, y, data)
-        z = calculations[0]
-        percentage = calculations[1]
-        print("Total numbers: {}. \nThe greatest number: {} ({} time(s)), {}%.".format(x, y, z, percentage))
-    if argument_data_type == 'line':
-        x = len(nested_list_of_data)
-        y = process_lines(nested_list_of_data)
-        calculations = calculate_count_percentage(x, y, nested_list_of_data)
-        z = calculations[0]
-        percentage = calculations[1]
-        print("Total lines: {}.\nThe longest line:\n{}\n({} time(s), {}%).".format(x, y, z, percentage))
-    if argument_data_type == 'word':
-        data = determine_input_data_type(nested_list_of_data)
-        if type(data[0]) is int:
-            y = sorted(data)[-1]
-        else:
-            y = process_words(data)
-        x = len(data)
-        calculations = calculate_count_percentage(x, y, data)
-        z = calculations[0]
-        percentage = calculations[1]
-        print("Total words: {}.\nThe longest word: {} ({} time(s), {}%).".format(x, y, z, percentage))
+way_to_sort = argument_data_type[0]
+type_of_data = argument_data_type[1]
+processed_data = determine_input_data_type(nested_list_of_data)
+if way_to_sort == 'natural' and type_of_data == 'line':
+    process_lines_naturally(nested_list_of_data)
+if way_to_sort == 'natural' and type_of_data != 'line':
+    print("Total numbers: {}.".format(len(processed_data)))
+    print("Sorted data: {}".format(sort_integers(processed_data)))
+if way_to_sort == 'byCount' and type_of_data == 'long':
+    print("Total numbers: {}.".format(len(processed_data)))
+    sorted_data = sort_integers(processed_data)
+    sort_by_count(sorted_data, len(processed_data))
+if way_to_sort == 'byCount' and type_of_data == 'word':
+    print("Total numbers: {}.".format(len(processed_data)))
+    sorted_data = sort_words(processed_data)
+    sort_by_count(sorted_data, len(processed_data))
+if way_to_sort == 'byCount' and type_of_data == 'line':
+    process_lines_by_count(nested_list_of_data)
