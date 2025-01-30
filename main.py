@@ -1,25 +1,42 @@
-
 import sys
 
 
 def parse_arguments():
-    args = sys.argv
+    args = sys.argv[:]
+    allowed_args = ['-sortingType', '-dataType', 'natural', 'byCount', 'long', 'line', 'word', '-inputFile',
+                    '-outputFile', 'main.py']
     sorting_types = ['natural', 'byCount']
     data_types = ['long', 'line', 'word']
     sorting_type = ''
     data_type = ''
-    if '-sortingType' in args:
-        for i in sorting_types:
-            if i in args:
-                sorting_type = i
-    elif '-sortingType' not in args:
+    input_type = 'input'
+    input_file_name = ''
+    output_file_name = ''
+    if '-sortingType' not in args:
         sorting_type = 'natural'
-    for i in data_types:
-        if i in args:
-            data_type = i
-    if len(data_type) == 0:
-        data_type = 'word'
-    return sorting_type, data_type
+    if '-sortingType' in args:
+        try:
+            sorting_type = args[args.index('-sortingType') + 1]
+            if sorting_type not in sorting_types:
+                sorting_type = 'No sorting type defined!'
+        except IndexError:
+            sorting_type = 'No sorting type defined!'
+    if '-dataType' in args:
+        try:
+            data_type = args[args.index('-dataType') + 1]
+            if data_type not in data_types:
+                data_type = 'No data type defined!'
+        except IndexError:
+            data_type = 'No data type defined!'
+    for i in args:
+        if i not in allowed_args and not i.endswith('.txt') and not i.endswith('.dat'):
+            print(i, 'is not a valid parameter. It will be skipped.')
+    if '-inputFile' in args:
+        input_file_name = args[args.index('-inputFile') + 1]
+        input_type = 'file'
+    if '-outputFile' in args:
+        output_file_name = args[args.index('-outputFile') + 1]
+    return input_type, sorting_type, data_type, input_file_name, output_file_name
 
 
 def take_input():
@@ -33,24 +50,30 @@ def take_input():
     return list_of_data
 
 
-def determine_input_data_type(raw_data):
-    integers_list = []
-    words_list = []
+def process_integers(raw_data):
+    list_of_integers = []
     for i in raw_data:
         for j in i.split():
             try:
-                converted_integer = int(j)
-                integers_list.append(converted_integer)
+                list_of_integers.append(int(j))
             except ValueError:
-                if j != '':
-                    words_list.append(j)
-    if len(integers_list) != 0:
-        return integers_list
-    if len(words_list) != 0:
-        return words_list
+                print(j, 'is not a valid parameter. It will be skipped.')
+    return list_of_integers
+
+
+def process_words(raw_data):
+    list_of_words = []
+    for i in raw_data:
+        for j in i.split():
+            if type(j) == str:
+                list_of_words.append(j)
+            elif type(j) == int:
+                print(j, 'is not a valid parameter. It will be skipped.')
+    return list_of_words
 
 
 def process_lines_by_count(lines_input):
+    output = []
     total = len(lines_input)
     lines_dictionary = {}
     for i in lines_input:
@@ -58,55 +81,42 @@ def process_lines_by_count(lines_input):
             lines_dictionary.update({i: 1})
         elif i in lines_dictionary:
             lines_dictionary[i] += 1
-    print("Total lines: {}.".format(total))
+    output.append("Total lines: {}.".format(total))
     for key, value in sorted(lines_dictionary.items()):
         percent = (value / total) * 100
-        print("{}: {} time(s), {}%".format(key, value, int(percent)))
+        output.append("{}: {} time(s), {}%".format(key, value, int(percent)))
+    return output
 
 
 def process_lines_naturally(lines_input):
+    output = []
     sorted_lines = sorted(lines_input)
-    print("Total lines: {}.".format(len(sorted_lines)))
-    print("Sorted data:")
+    output.append("Total lines: {}.".format(len(sorted_lines)))
+    output.append("Sorted data:")
     for i in sorted_lines:
-        print(i)
+        output.append(i)
+    return output
 
 
-def sort_integers(list_of_integers):
+def sort(list_to_sort):
     element = 1
-    while element < len(list_of_integers):
-        x = list_of_integers[element]
+    while element < len(list_to_sort):
+        x = list_to_sort[element]
         j = element - 1
-        while j >= 0 and list_of_integers[j] > x:
-            list_of_integers[j + 1] = list_of_integers[j]
+        while j >= 0 and list_to_sort[j] > x:
+            list_to_sort[j + 1] = list_to_sort[j]
             j = j - 1
-        list_of_integers[j + 1] = x
+        list_to_sort[j + 1] = x
         element = element + 1
     string = ''
-    for s in list_of_integers:
-        string += str(s)
-        string += ' '
-    return string
-
-
-def sort_words(list_of_words):
-    element = 1
-    while element < len(list_of_words):
-        first_index = list_of_words[element]
-        second_index = element - 1
-        while second_index >= 0 and str(list_of_words[second_index]) > str(first_index):
-            list_of_words[second_index + 1] = list_of_words[second_index]
-            second_index = second_index - 1
-        list_of_words[second_index + 1] = first_index
-        element = element + 1
-    string = ''
-    for s in list_of_words:
+    for s in list_to_sort:
         string += str(s)
         string += ' '
     return string
 
 
 def sort_by_count(list_to_sort, total):
+    output = []
     data_counted = {}
     count = 1
     for i in list_to_sort.split(' '):
@@ -117,26 +127,70 @@ def sort_by_count(list_to_sort, total):
             data_counted.update({i: count})
     for key, value in sorted(data_counted.items(), key=lambda x: x[1]):
         percent = (value / total) * 100
-        print("{}: {} time(s), {}%".format(key, value, int(percent)))
+        output.append("{}: {} time(s), {}%".format(key, value, int(percent)))
+    return output
+
+
+def create_output_statement(nested_list_of_data, type_of_data, way_to_sort):
+    output_statement = []
+    if type_of_data == 'line':
+        if way_to_sort == 'natural':
+            output_statement = process_lines_naturally(nested_list_of_data)
+        if way_to_sort == 'byCount':
+            output_statement = (process_lines_by_count(nested_list_of_data))
+    if type_of_data == 'long':
+        processed_data = process_integers(nested_list_of_data)
+        output_statement.append("Total numbers: {}.".format(len(processed_data)))
+        if way_to_sort == 'natural':
+            output_statement.append("Sorted data: {}".format(sort(processed_data)))
+        if way_to_sort == 'byCount':
+            sorted_data = sort(processed_data)
+            output_result = sort_by_count(sorted_data, len(processed_data))
+            output_statement.extend(output_result)
+    if type_of_data == 'word':
+        processed_data = process_words(nested_list_of_data)
+        output_statement.append("Total numbers: {}.".format(len(processed_data)))
+        if way_to_sort == 'natural':
+            output_statement.append("Sorted data: {}".format(sort(processed_data)))
+        if way_to_sort == 'byCount':
+            sorted_data = sort(processed_data)
+            output_result = sort_by_count(sorted_data, len(processed_data))
+            output_statement.extend(output_result)
+    return output_statement
+
+
+def read_from_file(file_name):
+    with open(file_name, 'r') as f:
+        data = f.read()
+    return data.splitlines()
 
 
 argument_data_type = parse_arguments()
-nested_list_of_data = take_input()
-way_to_sort = argument_data_type[0]
-type_of_data = argument_data_type[1]
-processed_data = determine_input_data_type(nested_list_of_data)
-if way_to_sort == 'natural' and type_of_data == 'line':
-    process_lines_naturally(nested_list_of_data)
-if way_to_sort == 'natural' and type_of_data != 'line':
-    print("Total numbers: {}.".format(len(processed_data)))
-    print("Sorted data: {}".format(sort_integers(processed_data)))
-if way_to_sort == 'byCount' and type_of_data == 'long':
-    print("Total numbers: {}.".format(len(processed_data)))
-    sorted_data = sort_integers(processed_data)
-    sort_by_count(sorted_data, len(processed_data))
-if way_to_sort == 'byCount' and type_of_data == 'word':
-    print("Total numbers: {}.".format(len(processed_data)))
-    sorted_data = sort_words(processed_data)
-    sort_by_count(sorted_data, len(processed_data))
-if way_to_sort == 'byCount' and type_of_data == 'line':
-    process_lines_by_count(nested_list_of_data)
+source_of_input = argument_data_type[0]
+way_to_sort = argument_data_type[1]
+type_of_data = argument_data_type[2]
+file_to_read_from = argument_data_type[3]
+file_to_write_to = argument_data_type[4]
+nested_list_of_data = []
+
+if source_of_input == 'file':
+    nested_list_of_data = read_from_file(file_to_read_from)
+if source_of_input == 'input':
+    nested_list_of_data = take_input()
+
+if way_to_sort == 'No sorting type defined!' and type_of_data == 'No data type defined!':
+    print('No sorting type defined!')
+elif way_to_sort == 'No sorting type defined!' and type_of_data != 'No data type defined!':
+    print('No sorting type defined!')
+elif type_of_data == 'No data type defined!' and way_to_sort != 'No sorting type defined!':
+    print('No data type defined!')
+else:
+    print_statement = create_output_statement(nested_list_of_data, type_of_data, way_to_sort)
+    if file_to_write_to != '':
+        with open(file_to_write_to, 'w') as f:
+            for i in print_statement:
+                f.write(i + '\n')
+            f.close()
+    else:
+        for i in print_statement:
+            print(i)
